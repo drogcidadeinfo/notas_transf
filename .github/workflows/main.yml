@@ -31,9 +31,9 @@ jobs:
         env:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
-        run: python download_table.py
+        run: python scripts/download_table.py
 
       - name: Process and Upload to Google Sheets
         env:
           GGL_CREDENTIALS: ${{ secrets.GGL_CREDENTIALS }}
-        run: python process_and_upload.py  
+        run: python scripts/process_and_upload.py  
