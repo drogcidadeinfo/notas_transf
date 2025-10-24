@@ -55,6 +55,14 @@ try:
 
     # wait til page loads completely
     WebDriverWait(driver, 10).until(lambda x: x.execute_script("return document.readyState === 'complete'"))
+    time.sleep(15)
+
+    # click popup if there
+    popup_elements = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "form_modalMsgMovimentacaoAnvisa")))
+    if popup_elements:
+        driver.find_element(By.ID, "sairModalMsgMovimentos").click()
+        print("Popup OK clicado com sucesso.\n")
+    time.sleep(5)
 
     # access "Compras Fornecedores"
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "sideMenuSearch")))
