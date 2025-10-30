@@ -58,20 +58,6 @@ try:
     WebDriverWait(driver, 10).until(lambda x: x.execute_script("return document.readyState === 'complete'"))
     time.sleep(15)
 
-    # click popup if there
-    try:
-    # Try to find the popup within 10 seconds
-        popup_element = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.ID, "form_modalMsgMovimentacaoAnvisa"))
-        )
-        if popup_element:
-            driver.find_element(By.ID, "sairModalMsgMovimentos").click()
-            print("Popup OK clicado com sucesso.\n")
-    except TimeoutException:
-        # If not found, just continue
-        print("Nenhum popup encontrado, continuando...\n")
-    time.sleep(5)
-
     # access "Compras Fornecedores"
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "sideMenuSearch")))
     driver.find_element(By.ID, "sideMenuSearch").send_keys("Compras Fornecedores")
