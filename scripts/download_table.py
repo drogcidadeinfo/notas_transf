@@ -9,6 +9,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 
 # set up logging config
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -60,16 +61,16 @@ try:
     # click popup if there
     try:
     # Try to find the popup within 10 seconds
-    popup_element = WebDriverWait(driver, 10).until(
+        popup_element = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, "form_modalMsgMovimentacaoAnvisa"))
-    )
-    if popup_element:
-        driver.find_element(By.ID, "sairModalMsgMovimentos").click()
-        print("Popup OK clicado com sucesso.\n")
+        )
+        if popup_element:
+            driver.find_element(By.ID, "sairModalMsgMovimentos").click()
+            print("Popup OK clicado com sucesso.\n")
     except TimeoutException:
         # If not found, just continue
         print("Nenhum popup encontrado, continuando...\n")
-     time.sleep(5)
+    time.sleep(5)
 
     # access "Compras Fornecedores"
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "sideMenuSearch")))
