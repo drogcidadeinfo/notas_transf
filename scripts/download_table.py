@@ -58,11 +58,18 @@ try:
     time.sleep(15)
 
     # click popup if there
-    popup_elements = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "form_modalMsgMovimentacaoAnvisa")))
-    if popup_elements:
+    try:
+    # Try to find the popup within 10 seconds
+    popup_element = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.ID, "form_modalMsgMovimentacaoAnvisa"))
+    )
+    if popup_element:
         driver.find_element(By.ID, "sairModalMsgMovimentos").click()
         print("Popup OK clicado com sucesso.\n")
-    time.sleep(5)
+    except TimeoutException:
+        # If not found, just continue
+        print("Nenhum popup encontrado, continuando...\n")
+     time.sleep(5)
 
     # access "Compras Fornecedores"
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "sideMenuSearch")))
