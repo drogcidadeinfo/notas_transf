@@ -63,13 +63,6 @@ try:
     if popup_element:
         driver.find_element(By.ID, "sairModalMsgMovimentos").click()
         """
-    popup = driver.find_elements(By.ID, "modalMsgMovimentacaoAnvisa")
-
-    if popup:
-        driver.find_element(By.ID, "sairModalMsgMovimentos").click()
-        print("Popup found and closed.")
-    else:
-        print("No popup, continuing...")
 
     # access "Compras Fornecedores"
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "sideMenuSearch")))
