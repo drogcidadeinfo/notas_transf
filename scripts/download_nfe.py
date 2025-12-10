@@ -26,8 +26,7 @@ download_dir = os.path.join(os.getcwd(), "downloads")  # or a full path you want
 os.makedirs(download_dir, exist_ok=True)
 logging.info(f"Download directory set to: {download_dir}")
 
-# ID_LIST = [98, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18]
-ID_LIST = [98, 1]
+ID_LIST = [98, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18]
 
 # calculate date range
 today = datetime.today()
