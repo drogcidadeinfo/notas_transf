@@ -42,7 +42,7 @@ jobs:
       - name: Convert xls files
         run: python scripts/xls_converter.py
 
-      - name: Process and Upload to Google Sheets
+      - name: Process and upload to google sheets
         env:
           GGL_CREDENTIALS: ${{ secrets.GGL_CREDENTIALS }}
           sheet_id: ${{ secrets.SHEET_ID }}
