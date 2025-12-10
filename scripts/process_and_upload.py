@@ -292,7 +292,7 @@ def update_google_sheet(df, sheet_id):
     df_transf = df_transf.rename(columns={'Emissão': 'Emissão Controle'})
 
     # Load filial spreadsheets once
-    filial_data = load_filial_files(folder=".")
+    filial_data = load_filial_files(folder="/home/runner/work/notas_transf/notas_transf/downloads")
 
     # Fill Emissão Nota
     df_transf = fill_nota_emissao(df_transf, filial_data)
