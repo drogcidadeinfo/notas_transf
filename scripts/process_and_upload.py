@@ -77,7 +77,7 @@ def process_dataframe(df):
     df['Pendente a'] = (current_date - df['Emissão']).dt.days
     df['Pendente as'] = (current_date - df['Entrada']).dt.days
     
-    df = df[(df['Pendente a'] >= 7)]
+    # df = df[(df['Pendente a'] >= 7)]
     
     # select relevant columns
     df = df[['Nota', 'Controle', 'Emissão', 'Pendente a', 'Entrada', 'Pendente as', 'Fornecedor', 'Filial Destino']]
