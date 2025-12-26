@@ -326,59 +326,6 @@ def update_worksheet(df, sheet_id, worksheet_name, client):
 
     logging.info(f"Worksheet '{worksheet_name}' updated successfully.")
     
-'''def update_google_sheet(df, sheet_id):
-    logging.info("Loading Google credentials...")
-
-    creds_env = os.getenv("GGL_CREDENTIALS")
-    scope = ["https://www.googleapis.com/auth/spreadsheets",
-             "https://www.googleapis.com/auth/drive"]
-
-    if creds_env:
-        creds = Credentials.from_service_account_info(json.loads(creds_env), scopes=scope)
-    else:
-        creds = Credentials.from_service_account_file("notas-transf.json", scopes=scope)
-
-    # gspread client
-    client = gspread.authorize(creds)
-
-    # Google Sheets API (for formatting)
-    service = build("sheets", "v4", credentials=creds)
-
-    logging.info("Splitting DataFrame into 'transf' and 'dist'...")
-
-    # Valid fornecedores: F1..F18 except F11 + F98
-    valid_fornecedores = {f"F{i}" for i in range(1, 19) if i != 11}
-    valid_fornecedores.add("F98")
-
-    df_transf = df[df["Fornecedor"].isin(valid_fornecedores)].copy()
-    df_dist = df[~df["Fornecedor"].isin(valid_fornecedores)].copy()
-
-    df_transf = df_transf.rename(columns={'Emissão': 'Emissão Controle'})
-
-    # Load filial spreadsheets once
-    filial_data = load_filial_files(folder="/home/runner/work/notas_transf/notas_transf/downloads")
-
-    # Fill Emissão Nota
-    df_transf = fill_nota_emissao(df_transf, filial_data)
-
-    df_transf = df_transf[['Controle', 'Emissão Controle', 'Nota',
-                           'Emissão Nota', 'Pendente a',
-                           'Fornecedor', 'Filial Destino']]
-
-    # Remove Controle column only from dist
-    if "Controle" in df_dist.columns:
-        df_dist = df_dist.drop(columns=["Controle"])
-
-    # Sort dist worksheet alphabetically by Filial Destino
-    df_dist = df_dist.sort_values(by="Filial Destino", ascending=True)
-
-    # upload data first
-    update_worksheet(df_transf, sheet_id, "transf", client)
-    update_worksheet(df_dist, sheet_id, "dist", client)
-
-    # apply formatting after 
-    apply_red_background_for_pendente(service, sheet_id, "transf")'''
-
 def update_google_sheet(df, sheet_id):
     logging.info("Loading Google credentials...")
 
@@ -414,31 +361,20 @@ def update_google_sheet(df, sheet_id):
     # Fill Emissão Nota
     df_transf = fill_nota_emissao(df_transf, filial_data)
 
-    # Add new column: DIF CONTR X NF (difference in days)
-    # Only calculate when Emissão Nota is not empty
-    df_transf["DIF CONTR X NF"] = ""
+    # Ensure date columns are datetime
+    df_transf["Emissão Controle"] = pd.to_datetime(df_transf["Emissão Controle"], errors="coerce")
+    df_transf["Emissão Nota"] = pd.to_datetime(df_transf["Emissão Nota"], errors="coerce")
     
-    # Check if both date columns exist and have data
-    if "Emissão Controle" in df_transf.columns and "Emissão Nota" in df_transf.columns:
-        # Convert date columns to datetime if they're not already
-        # Handle potential mixed formats or string dates
-        df_transf["Emissão Controle"] = pd.to_datetime(df_transf["Emissão Controle"], errors='coerce')
-        df_transf["Emissão Nota"] = pd.to_datetime(df_transf["Emissão Nota"], errors='coerce')
-        
-        # Calculate difference only where Emissão Nota is not null
-        mask_not_null = df_transf["Emissão Nota"].notna()
-        df_transf.loc[mask_not_null, "DIF CONTR X NF"] = (
-            df_transf.loc[mask_not_null, "Emissão Controle"] - 
-            df_transf.loc[mask_not_null, "Emissão Nota"]
-        ).dt.days
-        
-        # Convert back to original format for display
-        df_transf["Emissão Controle"] = df_transf["Emissão Controle"].dt.strftime('%Y-%m-%d')
-        df_transf["Emissão Nota"] = df_transf["Emissão Nota"].dt.strftime('%Y-%m-%d')
+    # Calculate CONTROL X NF
+    df_transf["CONTROL X NF"] = (
+        df_transf["Emissão Controle"] - df_transf["Emissão Nota"]
+    ).dt.days
+    
+    # Handle missing Emissão Nota
+    df_transf.loc[df_transf["Emissão Nota"].isna(), "CONTROL X NF"] = "Sem NF-e"
 
-    # Reorder columns with the new one before "Pendente a"
     df_transf = df_transf[['Controle', 'Emissão Controle', 'Nota',
-                           'Emissão Nota', 'DIF CONTR X NF', 'Pendente a',
+                           'Emissão Nota', "CONTROL X NF", 'Pendente a',
                            'Fornecedor', 'Filial Destino']]
 
     # Remove Controle column only from dist
