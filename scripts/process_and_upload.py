@@ -325,8 +325,107 @@ def update_worksheet(df, sheet_id, worksheet_name, client):
     sheet.update(rows)
 
     logging.info(f"Worksheet '{worksheet_name}' updated successfully.")
-    
+
 def update_google_sheet(df, sheet_id):
+    logging.info("Loading Google credentials...")
+
+    creds_env = os.getenv("GGL_CREDENTIALS")
+    scope = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
+
+    if creds_env:
+        creds = Credentials.from_service_account_info(
+            json.loads(creds_env), scopes=scope
+        )
+    else:
+        creds = Credentials.from_service_account_file(
+            "notas-transf.json", scopes=scope
+        )
+
+    # gspread client
+    client = gspread.authorize(creds)
+
+    # Google Sheets API (for formatting)
+    service = build("sheets", "v4", credentials=creds)
+
+    logging.info("Splitting DataFrame into 'transf' and 'dist'...")
+
+    # Valid fornecedores: F1..F18 except F11 + F98
+    valid_fornecedores = {f"F{i}" for i in range(1, 19) if i != 11}
+    valid_fornecedores.add("F98")
+
+    df_transf = df[df["Fornecedor"].isin(valid_fornecedores)].copy()
+    df_dist = df[~df["Fornecedor"].isin(valid_fornecedores)].copy()
+
+    df_transf = df_transf.rename(columns={"Emissão": "Emissão Controle"})
+
+    # Load filial spreadsheets once
+    filial_data = load_filial_files(
+        folder="/home/runner/work/notas_transf/notas_transf/downloads"
+    )
+
+    # Fill Emissão Nota
+    df_transf = fill_nota_emissao(df_transf, filial_data)
+
+    # --- DATE HANDLING (FIXED) ---
+    df_transf["Emissão Controle"] = pd.to_datetime(
+        df_transf["Emissão Controle"], dayfirst=True, errors="coerce"
+    )
+    df_transf["Emissão Nota"] = pd.to_datetime(
+        df_transf["Emissão Nota"], dayfirst=True, errors="coerce"
+    )
+
+    # --- CONTROL X NF ---
+    df_transf["CONTROL X NF"] = (
+        df_transf["Emissão Controle"] - df_transf["Emissão Nota"]
+    ).dt.days
+
+    # Allow mixed types (int + text)
+    df_transf["CONTROL X NF"] = df_transf["CONTROL X NF"].astype("object")
+
+    df_transf.loc[
+        df_transf["Emissão Nota"].isna(), "CONTROL X NF"
+    ] = "Sem NF-e"
+
+    # Column order
+    df_transf = df_transf[
+        [
+            "Controle",
+            "Emissão Controle",
+            "Nota",
+            "Emissão Nota",
+            "CONTROL X NF",
+            "Pendente a",
+            "Fornecedor",
+            "Filial Destino",
+        ]
+    ]
+
+    # --- CONVERT DATETIME → STRING (REQUIRED FOR GSPREAD) ---
+    for col in ["Emissão Controle", "Emissão Nota"]:
+        if col in df_transf.columns:
+            df_transf[col] = df_transf[col].apply(
+                lambda x: x.strftime("%d/%m/%Y") if pd.notna(x) else ""
+            )
+
+    # Remove Controle column only from dist
+    if "Controle" in df_dist.columns:
+        df_dist = df_dist.drop(columns=["Controle"])
+
+    # Sort dist worksheet alphabetically by Filial Destino
+    df_dist = df_dist.sort_values(by="Filial Destino", ascending=True)
+
+    # Upload data
+    update_worksheet(df_transf, sheet_id, "transf", client)
+    update_worksheet(df_dist, sheet_id, "dist", client)
+
+    # Apply formatting after upload
+    apply_red_background_for_pendente(service, sheet_id, "transf")
+    apply_red_background_for_dif_contr_nf(service, sheet_id, "transf")
+    
+'''def update_google_sheet(df, sheet_id):
     logging.info("Loading Google credentials...")
 
     creds_env = os.getenv("GGL_CREDENTIALS")
@@ -390,7 +489,7 @@ def update_google_sheet(df, sheet_id):
 
     # apply formatting after 
     apply_red_background_for_pendente(service, sheet_id, "transf")
-    apply_red_background_for_dif_contr_nf(service, sheet_id, "transf")
+    apply_red_background_for_dif_contr_nf(service, sheet_id, "transf")'''
 
 def main():
     # runs processing pipeline.
