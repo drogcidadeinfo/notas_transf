@@ -409,6 +409,34 @@ def update_google_sheet(df, sheet_id):
             df_transf[col] = df_transf[col].apply(
                 lambda x: x.strftime("%d/%m/%Y") if pd.notna(x) else ""
             )
+    # --- PRIORITY: Pendente a >= 10 ---
+    df_transf["Priority"] = (df_transf["Pendente a"] >= 10).astype(int)
+    
+    # Numeric CONTROL X NF, keep NaN for Sem NF-e
+    df_transf["CONTROL_X_NF_NUM"] = pd.to_numeric(
+        df_transf["CONTROL X NF"], errors="coerce"
+    )
+    
+    # --- SORT ---
+    df_transf = df_transf.sort_values(
+        by=[
+            "Priority",              # 1️⃣ Pendente >= 10 first
+            "CONTROL_X_NF_NUM",      # 2️⃣ Higher CONTROL X NF inside group
+            "Filial Destino",        # 3️⃣ Filial
+            "Pendente a",            # 4️⃣ Pendente a
+        ],
+        ascending=[
+            False,   # Priority
+            False,   # CONTROL X NF
+            True,    # Filial
+            False,   # Pendente a
+        ],
+        na_position="last",         # 👈 Sem NF-e goes last *inside its group*
+    )
+    
+    # --- CLEANUP ---
+    df_transf = df_transf.drop(columns=["Priority", "CONTROL_X_NF_NUM"])
+
 
     # Remove Controle column only from dist
     if "Controle" in df_dist.columns:
