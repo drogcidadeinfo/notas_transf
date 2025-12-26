@@ -379,7 +379,7 @@ def update_google_sheet(df, sheet_id):
 
     # --- CONTROL X NF ---
     df_transf["CONTROL X NF"] = (
-        df_transf["Emissão Controle"] - df_transf["Emissão Nota"]
+        df_transf["Emissão Nota"] - df_transf["Emissão Controle"]
     ).dt.days
 
     # Allow mixed types (int + text)
