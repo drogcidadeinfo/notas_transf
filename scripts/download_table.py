@@ -56,13 +56,10 @@ try:
 
     # wait til page loads completely
     WebDriverWait(driver, 10).until(lambda x: x.execute_script("return document.readyState === 'complete'"))
-    time.sleep(15)
+    time.sleep(10)
 
-    """
-    popup_element = driver.find_element(By.ID, "modalMsgMovimentacaoAnvisa") 
-    if popup_element:
-        driver.find_element(By.ID, "sairModalMsgMovimentos").click()
-        """
+    driver.find_element(By.TAG_NAME, "body").send_keys(Keys.F11)
+    time.sleep(2)
 
     # access "Compras Fornecedores"
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "sideMenuSearch")))
