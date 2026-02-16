@@ -129,7 +129,6 @@ def update_worksheet(df, sheet_id, worksheet_name, client):
     try:
         sheet = client.open_by_key(sheet_id).worksheet(worksheet_name)
     except gspread.WorksheetNotFound:
-        # Create the worksheet if it doesn't exist
         sh = client.open_by_key(sheet_id)
         sheet = sh.add_worksheet(title=worksheet_name, rows=1000, cols=len(df.columns))
         logging.info(f"Worksheet '{worksheet_name}' created.")
@@ -137,12 +136,34 @@ def update_worksheet(df, sheet_id, worksheet_name, client):
     # Clear existing content
     sheet.clear()
 
-    # Prepare data: headers + rows
     if df.empty:
         logging.warning("DataFrame is empty. Nothing to upload.")
         return
 
-    data = [df.columns.tolist()] + df.values.tolist()
+    # Convert any non‑serializable values (Timestamps, NaT) to strings
+    def make_serializable(val):
+        # pandas Timestamp / NaT
+        if hasattr(val, 'strftime'):
+            # Convert to string, handling NaT (which also has strftime but returns NaT)
+            try:
+                return val.strftime('%Y-%m-%d %H:%M:%S') if not pd.isna(val) else ''
+            except ValueError:
+                return ''
+        # numpy datetime64
+        if hasattr(val, 'dtype') and 'datetime' in str(val.dtype):
+            return pd.Timestamp(val).strftime('%Y-%m-%d %H:%M:%S') if not pd.isna(val) else ''
+        # fallback for any other non‑serializable objects? keep as is
+        return val
+
+    # Build data rows with conversion
+    data = []
+    # headers
+    data.append(df.columns.tolist())
+    # rows
+    for row in df.values:
+        data.append([make_serializable(cell) for cell in row])
+
+    # Upload
     sheet.update(range_name='A1', values=data)
 
     # Optional: format header row bold
