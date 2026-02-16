@@ -142,6 +142,17 @@ def clean_transfer_file(file_path: str) -> pd.DataFrame:
     ordem_colunas = ["Filial Origem", "Filial Destino", "Emissão", "Núm. Contrl.", "Valor Total"]
     clean_df = clean_df[ordem_colunas]
 
+    clean_df["Núm. Contrl."] = (
+        clean_df["Núm. Contrl."]
+        .apply(lambda x: str(int(x)) if pd.notna(x) else "")
+    )
+
+    # Format Valor Total as Brazilian currency format
+    clean_df["Valor Total"] = (
+        pd.to_numeric(clean_df["Valor Total"], errors="coerce")
+        .map(lambda x: f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if pd.notna(x) else "")
+    )
+
     # Format date
     clean_df["Emissão"] = pd.to_datetime(clean_df["Emissão"], errors="coerce").dt.strftime("%d/%m/%Y")
 
@@ -149,7 +160,6 @@ def clean_transfer_file(file_path: str) -> pd.DataFrame:
     clean_df = clean_df.dropna(subset=["Emissão", "Núm. Contrl."])
 
     return clean_df
-
 
 # -------------------------------------------------
 # Google Sheets update
