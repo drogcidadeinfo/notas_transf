@@ -1,0 +1,40 @@
+name: notas_transf_up_2
+
+on:
+  workflow_dispatch: 
+  schedule:
+    - cron: '0 4 * * *'  # Runs every day at 3am GMT-3
+
+permissions: write-all # Give the workflow permission to write to the repository
+
+jobs:
+  run-selenium:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install selenium pandas openpyxl xlrd gspread google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client packaging
+      
+      - name: Download main table
+        env:
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+        run: python scripts/download_table_2.py
+
+      - name: Process and upload to google sheets
+        env:
+          GGL_CREDENTIALS: ${{ secrets.GGL_CREDENTIALS }}
+          sheet_id: ${{ secrets.SHEET_ID }}
+        run: python scripts/process_and_upload_2.py 
