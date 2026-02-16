@@ -148,7 +148,6 @@ def clean_transfer_file(file_path: str) -> pd.DataFrame:
 # Google Sheets update
 # -------------------------------------------------
 def update_worksheet(df: pd.DataFrame, sheet_id: str, worksheet_name: str, client: gspread.Client):
-    """Replace the content of a worksheet with the given dataframe."""
     sh = client.open_by_key(sheet_id)
 
     try:
@@ -157,26 +156,33 @@ def update_worksheet(df: pd.DataFrame, sheet_id: str, worksheet_name: str, clien
         ws = sh.add_worksheet(title=worksheet_name, rows=1000, cols=max(1, len(df.columns)))
         logging.info(f"Worksheet '{worksheet_name}' created.")
 
-    # Clear & resize
     ws.clear()
+
     rows = len(df) + 1  # header
     cols = len(df.columns)
     ws.resize(rows=rows, cols=cols)
 
-    # Prepare values (header + rows)
     values = [df.columns.tolist()] + df.astype(str).where(pd.notna(df), "").values.tolist()
 
-    # Write in chunks to avoid payload limits
-    CHUNK = 5000  # rows per request
+    end_col = colnum_to_a1(cols)
+
+    CHUNK = 2000  # safer vs API limits
     for start in range(0, len(values), CHUNK):
-        chunk = values[start : start + CHUNK]
-        range_start_row = start + 1
-        range_end_row = start + len(chunk)
-        cell_range = f"A{range_start_row}:"
-        retry_api_call(lambda: ws.update(cell_range, chunk, value_input_option="RAW"))
+        chunk = values[start:start + CHUNK]
+        start_row = start + 1
+        end_row = start + len(chunk)
+
+        range_name = f"A{start_row}:{end_col}{end_row}"
+
+        retry_api_call(
+            lambda rn=range_name, v=chunk: ws.update(
+                values=v,
+                range_name=rn,
+                value_input_option="RAW",
+            )
+        )
 
     logging.info(f"Updated '{worksheet_name}' with {len(df)} rows.")
-
 
 def update_google_sheet(df: pd.DataFrame, sheet_id: str):
     """Authorize and update the Google Sheet."""
