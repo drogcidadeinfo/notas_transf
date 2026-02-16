@@ -140,19 +140,31 @@ def update_worksheet(df, sheet_id, worksheet_name, client):
         logging.warning("DataFrame is empty. Nothing to upload.")
         return
 
-    # Convert any non‑serializable values (Timestamps, NaT) to strings
+    # Convert any non‑serializable values to strings or empty strings
     def make_serializable(val):
-        # pandas Timestamp / NaT
+        # Handle NaN/None
+        if pd.isna(val):
+            return ''
+        
+        # Handle pandas Timestamp / datetime
         if hasattr(val, 'strftime'):
-            # Convert to string, handling NaT (which also has strftime but returns NaT)
             try:
-                return val.strftime('%Y-%m-%d %H:%M:%S') if not pd.isna(val) else ''
-            except ValueError:
+                return val.strftime('%d/%m/%Y')  # Use the same format as before
+            except (ValueError, AttributeError):
                 return ''
-        # numpy datetime64
+        
+        # Handle numpy datetime64
         if hasattr(val, 'dtype') and 'datetime' in str(val.dtype):
-            return pd.Timestamp(val).strftime('%Y-%m-%d %H:%M:%S') if not pd.isna(val) else ''
-        # fallback for any other non‑serializable objects? keep as is
+            try:
+                return pd.Timestamp(val).strftime('%d/%m/%Y')
+            except (ValueError, TypeError):
+                return ''
+        
+        # Handle float values (check for NaN again just in case)
+        if isinstance(val, float):
+            if pd.isna(val) or val != val:  # NaN check
+                return ''
+        
         return val
 
     # Build data rows with conversion
@@ -161,30 +173,51 @@ def update_worksheet(df, sheet_id, worksheet_name, client):
     data.append(df.columns.tolist())
     # rows
     for row in df.values:
-        data.append([make_serializable(cell) for cell in row])
+        converted_row = [make_serializable(cell) for cell in row]
+        data.append(converted_row)
 
-    # Upload
-    sheet.update(range_name='A1', values=data)
+    # Upload in chunks if data is large (Google Sheets has limits)
+    chunk_size = 5000  # Adjust based on your needs
+    for i in range(0, len(data), chunk_size):
+        chunk = data[i:i+chunk_size]
+        start_row = i + 1  # +1 because sheets are 1-indexed and we have headers
+        range_name = f'A{start_row}' if i == 0 else f'A{start_row}'
+        
+        try:
+            if i == 0:
+                # First chunk includes headers
+                sheet.update(range_name='A1', values=chunk)
+            else:
+                # Subsequent chunks are data only
+                sheet.update(range_name=range_name, values=chunk)
+            
+            logging.info(f"Uploaded chunk {i//chunk_size + 1}/{(len(data)-1)//chunk_size + 1}")
+        except Exception as e:
+            logging.error(f"Error uploading chunk: {e}")
+            raise
 
-    # Optional: format header row bold
-    service = build('sheets', 'v4', credentials=client.auth)
-    requests = [{
-        'repeatCell': {
-            'range': {
-                'sheetId': sheet.id,
-                'startRowIndex': 0,
-                'endRowIndex': 1
-            },
-            'cell': {
-                'userEnteredFormat': {
-                    'textFormat': {'bold': True}
-                }
-            },
-            'fields': 'userEnteredFormat.textFormat.bold'
-        }
-    }]
-    body = {'requests': requests}
-    service.spreadsheets().batchUpdate(spreadsheetId=sheet_id, body=body).execute()
+    # Format header row bold
+    try:
+        service = build('sheets', 'v4', credentials=client.auth)
+        requests = [{
+            'repeatCell': {
+                'range': {
+                    'sheetId': sheet.id,
+                    'startRowIndex': 0,
+                    'endRowIndex': 1
+                },
+                'cell': {
+                    'userEnteredFormat': {
+                        'textFormat': {'bold': True}
+                    }
+                },
+                'fields': 'userEnteredFormat.textFormat.bold'
+            }
+        }]
+        body = {'requests': requests}
+        service.spreadsheets().batchUpdate(spreadsheetId=sheet_id, body=body).execute()
+    except Exception as e:
+        logging.warning(f"Could not format header row: {e}")
 
     logging.info(f"Uploaded {len(df)} rows to '{worksheet_name}'.")
 
