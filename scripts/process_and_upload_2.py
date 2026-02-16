@@ -43,6 +43,13 @@ def retry_api_call(func, retries=3, delay=2):
                 raise
     raise Exception("Max retries reached.")
 
+def colnum_to_a1(n: int) -> str:
+    """1 -> A, 26 -> Z, 27 -> AA ..."""
+    s = ""
+    while n > 0:
+        n, r = divmod(n - 1, 26)
+        s = chr(65 + r) + s
+    return s
 
 # -------------------------------------------------
 # Your notebook logic, packaged into a function
