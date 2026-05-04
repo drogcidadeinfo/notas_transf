@@ -78,7 +78,7 @@ try:
     time.sleep(2)
 
     driver.find_element(By.TAG_NAME, "body").send_keys(Keys.F11)
-    time.sleep(2)
+    time.sleep(5)
 
     # access "Notas Fiscais"
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "sideMenuSearch")))
@@ -87,7 +87,7 @@ try:
     time.sleep(2)
 
     driver.find_element(By.CSS_SELECTOR, '[title="Notas Fiscais"]').click()
-    time.sleep(2)
+    time.sleep(5)
     
     for id_value in ID_LIST:
 
@@ -101,6 +101,7 @@ try:
         # start and end dates
         driver.find_element(By.ID, "dat_inicio").send_keys(inicio)
         driver.find_element(By.ID, "dat_fim").send_keys(fim)
+        time.sleep(5)
         
         WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, "tabTabdhtmlgoodies_tabView1_1"))).click()
         time.sleep(2)
