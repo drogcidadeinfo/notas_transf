@@ -77,8 +77,14 @@ try:
     WebDriverWait(driver, 10).until(lambda x: x.execute_script("return document.readyState === 'complete'"))
     time.sleep(2)
 
-    driver.find_element(By.TAG_NAME, "body").send_keys(Keys.F11)
-    time.sleep(5)
+    try:
+        btn = WebDriverWait(driver, 3).until(
+            EC.element_to_be_clickable((By.ID, "sairModalMsgMovimentos"))
+        )
+        btn.click()
+        print("Popup fechado.")
+    except:
+        print("Popup não apareceu.")
 
     # access "Notas Fiscais"
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "sideMenuSearch")))
