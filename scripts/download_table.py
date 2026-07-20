@@ -99,7 +99,7 @@ try:
     # log download start
     logging.info("Download has started.")
     # wait for download to complete
-    time.sleep(10)
+    time.sleep(20)
 
     # get the most recent downloaded file
     files = os.listdir(download_dir)
