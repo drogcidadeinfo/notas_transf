@@ -93,7 +93,7 @@ try:
     time.sleep(2)
 
     driver.find_element(By.CSS_SELECTOR, '[title="Notas Fiscais"]').click()
-    time.sleep(5)
+    time.sleep(15)
     
     for id_value in ID_LIST:
 
