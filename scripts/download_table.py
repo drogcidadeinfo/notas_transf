@@ -72,10 +72,12 @@ try:
     driver.find_element(By.ID, "sideMenuSearch").send_keys("Compras Fornecedores")
     driver.find_element(By.ID, "sideMenuSearch").click()
     driver.implicitly_wait(2)
-
+    
     driver.find_element(By.CSS_SELECTOR, '[title="Compras Fornecedores"]').click()
+    logging.info("Menu Compras Fornecedores clicado com sucesso...")
 
     WebDriverWait(driver, 10).until(lambda x: x.execute_script("return document.readyState === 'complete'"))
+    driver.implicitly_wait(5)
 
     WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, "agrup_fil_2"))).click()
     WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, "tabTabdhtmlgoodies_tabView1_2"))).click()
